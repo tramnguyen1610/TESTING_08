@@ -1,30 +1,29 @@
 package pageobjects;
 
+import common.Constant;
+import org.openqa.selenium.By;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import java.time.Duration;
+
 public class LoginPage extends GeneralPage {
-    private static final String LOGIN = "admin@abc.com";
-    private static final String PASSWORD = "tram12345678";
 
-    private String username;
-    private String password;
+    private final By txtUsername = By.id("username");
+    private final By txtPassword = By.id("password");
+    private final By btnLogin = By.xpath("//input[@type='submit' and @value='login']");
+    private final By lblLoginError = By.xpath("//p[contains(@class, 'message error')]");
 
-    public LoginPage() {
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public boolean isLoggedIn() {
-        return (username.equals("") || password.equals(""));
-    }
-
-    // Login method
     public void login(String username, String password) {
-        this.username = username;
-        this.password = password;
+        WebDriverWait wait = new WebDriverWait(Constant.WEBDRIVER, Duration.ofSeconds(10));
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(txtUsername)).sendKeys(username);
+        Constant.WEBDRIVER.findElement(txtPassword).sendKeys(password);
+        wait.until(ExpectedConditions.elementToBeClickable(btnLogin)).click();
+    }
+
+    public String getLoginErrorMessage() {
+        WebDriverWait wait = new WebDriverWait(Constant.WEBDRIVER, Duration.ofSeconds(10));
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(lblLoginError))
+                .getText().trim();
     }
 }
