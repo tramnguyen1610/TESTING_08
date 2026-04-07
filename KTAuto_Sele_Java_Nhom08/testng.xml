@@ -1,5 +1,10 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Safe Railway Test Suite">
+
+    <listeners>
+        <listener class-name="testcases.TestListener"/>
+    </listeners>
+
     <test name="All Tests">
         <classes>
             <class name="testcases.LoginTest"/>
@@ -10,4 +15,5 @@
             <class name="testcases.ForgotPasswordTest"/>
         </classes>
     </test>
+
 </suite>

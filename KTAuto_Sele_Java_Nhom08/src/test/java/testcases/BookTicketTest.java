@@ -1,4 +1,4 @@
 package testcases;
 
-public class BookTicketTest {
+public class BookTicketTest extends BaseTest {
 }

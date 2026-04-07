@@ -1,4 +1,4 @@
 package testcases;
 
-public class ForgotPasswordTest {
+public class ForgotPasswordTest extends BaseTest {
 }
