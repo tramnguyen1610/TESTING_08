@@ -1,21 +1,25 @@
 package pageobjects;
 
-public class HomePage {
+import common.Constant;
+import org.openqa.selenium.By;
 
-    public HomePage() {
-        // Constructor
+public class HomePage extends GeneralPage {
+
+
+    public void clickLoginTab() {
+        super.clickLoginTab();   // kế thừa từ GeneralPage
     }
 
-    public void setHomePage(HomePage home) {
-        // Implementation
+    public void clickBookTicketTab() {
+        super.clickBookTicketTab();
     }
 
-    public String getText() {
-        return "Home Page Text";
+    public void clickChangePasswordTab() {
+        super.clickChangePasswordTab();
     }
 
-    // This is a method that starts our test cases
-    public HomePage navigateToHome() {
-        return this;
+    // Method tiện ích
+    public void navigateToHome() {
+        Constant.WEBDRIVER.get(Constant.BASE_URL);
     }
 }
