@@ -14,30 +14,31 @@ import java.util.Calendar;
 
 public class TestListener extends TestListenerAdapter {
 
-    public static WebDriver driver;
+    public static WebDriver driver;   // static để các class khác truy cập
 
     @Override
     public void onTestFailure(ITestResult result) {
+        if (driver == null) {
+            return;
+        }
+
         String testCaseName = result.getName();
+        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss")
+                .format(Calendar.getInstance().getTime());
 
-        if (driver != null) {
-            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss")
-                    .format(Calendar.getInstance().getTime());
+        File screenshotDir = new File("evidence/screenshots/");
+        if (!screenshotDir.exists()) {
+            screenshotDir.mkdirs();
+        }
 
-            File screenshotDir = new File("evidence/screenshots/");
-            if (!screenshotDir.exists()) {
-                screenshotDir.mkdirs();
-            }
+        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+        String filePath = "evidence/screenshots/" + testCaseName + "_" + timestamp + ".png";
 
-            File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-            String filePath = "evidence/screenshots/" + testCaseName + "_" + timestamp + ".png";
-
-            try {
-                FileUtils.copyFile(screenshot, new File(filePath));
-                System.out.println("SCREENSHOT SAVED: " + filePath);
-            } catch (IOException e) {
-                System.out.println("Failed to save screenshot: " + e.getMessage());
-            }
+        try {
+            FileUtils.copyFile(screenshot, new File(filePath));
+            System.out.println("SCREENSHOT SAVED: " + filePath);
+        } catch (IOException e) {
+            System.err.println("Failed to save screenshot: " + e.getMessage());
         }
     }
 }
