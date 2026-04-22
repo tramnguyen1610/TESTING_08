@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản lý nhà cung cấp - Kim Liên Minimart{% endblock %}
+
+{% block content %}
+<style>
+    /* ... (Phần CSS cũ giữ nguyên) ... */
+    .page-top-header { width: 100%; height: 126px; background-color: #FFFFFF; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; box-sizing: border-box; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
+    .stats-row { display: flex; justify-content: space-between; width: 100%; margin-bottom: 30px; }
+    .stat-card { width: 32%; height: 110px; background-color: #FFFFFF; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .stat-icon { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .bg-pink { background-color: #FFF0F2; } .bg-yellow { background-color: #FFF8E1; } .bg-blue { background-color: #EBF4FF; }
+    .stat-text { text-align: center; } .stat-value { font-size: 24px; font-weight: bold; color: #000; } .stat-label { font-size: 16px; color: #5B5B5B; margin-top: 4px; }
+    .search-container { width: 100%; margin-bottom: 20px; }
+    .search-box { width: 350px; background: #fff; border-radius: 25px; padding: 10px 20px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .search-box input { border: none; outline: none; width: 100%; padding-left: 10px; }
+    .btn-action { background: #f0f0f0; border: none; border-radius: 5px; padding: 6px 10px; cursor: pointer; margin-right: 5px; transition: 0.2s; }
+    .btn-action:hover { background: #FFC92A; }
+    .pagination-container { display: flex; justify-content: center; margin-top: 25px; gap: 8px; }
+    .page-btn { padding: 8px 16px; border: 1px solid #D1D5DB; background: #fff; border-radius: 8px; cursor: pointer; }
+    .page-btn.active { background-color: #2196F3; color: white; border-color: #2196F3; }
+
+    /* CSS GIAO DIỆN MODAL */
+    .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+    .modal-content { background-color: #fff; margin: 5% auto; border-radius: 15px; width: 750px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); overflow: hidden; }
+    .modal-header { background-color: #FFD54F; padding: 15px 25px; font-weight: bold; font-size: 20px; display: flex; justify-content: space-between; }
+    .modal-body { padding: 25px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .section-title { color: #FFB300; font-size: 18px; font-weight: bold; margin: 15px 0 15px 0; border-bottom: 2px solid #FFECB3; padding-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+    .form-group label { display: block; margin-bottom: 5px; font-size: 15px; color: #333; }
+    .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+    .input-readonly { background-color: #E0E0E0; pointer-events: none; color: #555; }
+    .note-text { font-size: 12px; color: #888; margin-top: 5px; display: block; }
+    .req { color: red; }
+    .modal-footer { padding: 20px; display: flex; gap: 15px; justify-content: flex-end; background: #fafafa; border-top: 1px solid #eee; }
+    .btn-save { background-color: #FFD54F; border: none; padding: 12px 30px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+    .btn-cancel { background-color: #fff; border: 1px solid #ccc; padding: 12px 30px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+
+    /* CSS ĐẶC BIỆT CHO MODAL XÓA (Giống thiết kế) */
+    .delete-modal-content {
+        background-color: #fff; margin: 15% auto; border-radius: 15px; width: 450px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3); overflow: hidden; text-align: center; padding: 40px 30px;
+    }
+    .warning-icon { font-size: 80px; line-height: 1; margin-bottom: 10px; }
+    .delete-title { font-size: 24px; font-weight: bold; margin-bottom: 30px; color: #000; }
+    .delete-buttons { display: flex; justify-content: center; gap: 20px; }
+    .btn-del-cancel { background-color: #fff; border: 1px solid #ddd; padding: 12px; width: 160px; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn-del-confirm { background-color: #FFD54F; border: none; padding: 12px; width: 160px; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+</style>
+
+<div class="page-top-header">
+    <div class="header-info">
+        <h2 style="margin:0; display:flex; align-items:center; gap:10px;"> <img src="{% static 'icons/3_IconSupplier.png' %}">Quản lý nhà cung cấp</h2>
+        <p style="margin:5px 0 0; color:#666">Trang chủ / Quản lý / Nhà cung cấp</p>
+    </div>
+    <button class="btn-save" onclick="openAddModal()" style="background-color: #4CAF50; color: white;">+ Thêm mới nhà cung cấp</button>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-icon bg-pink"><img src="{% static 'icons/7_IconPeople.png' %}" alt="NCC" style="width: 30px;" onerror="this.outerHTML='<span style=\'font-size: 24px;\'>👥</span>'"></div>
+        <div class="stat-text"><div class="stat-value" id="val_ncc">...</div><div class="stat-label">NCC hoạt động</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-yellow"><img src="{% static 'icons/8_IconProductYellow.png' %}" alt="Box" style="width: 30px;" onerror="this.outerHTML='<span style=\'font-size: 24px;\'>📦</span>'"></div>
+        <div class="stat-text"><div class="stat-value" id="val_don">...</div><div class="stat-label">Đơn nhập hôm nay</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-blue"><img src="{% static 'icons/5_IconImportGoodsBlue.png' %}" alt="Money" style="width: 30px;" onerror="this.outerHTML='<span style=\'font-size: 24px;\'>💸</span>'"></div>
+        <div class="stat-text"><div class="stat-value" id="val_tien">...</div><div class="stat-label">Tổng chi phí nhập</div></div>
+    </div>
+</div>
+
+<div class="search-container">
+    <div class="search-box">
+        <img src="{% static 'icons/16_IconSearch.png' %}">
+        <input type="text" id="ncc_search" placeholder="Nhập tên, SĐT, Địa chỉ NCC..." onkeyup="searchNCC(1)">
+    </div>
+</div>
+
+<div style="width: 100%; background: #fff; border-radius: 12px; padding: 30px; box-sizing: border-box;">
+    <h3 style="margin-top:0">Danh sách nhà cung cấp</h3>
+    <table style="width:100%; border-collapse: collapse;" id="ncc_table">
+        <thead style="background:#FFF8E1">
+            <tr>
+                <th style="padding:15px; border:1px solid #eee; text-align:left;">Mã NCC</th>
+                <th style="padding:15px; border:1px solid #eee; text-align:left;">Tên NCC</th>
+                <th style="padding:15px; border:1px solid #eee; text-align:left;">SĐT</th>
+                <th style="padding:15px; border:1px solid #eee; text-align:left;">Địa chỉ</th>
+                <th style="padding:15px; border:1px solid #eee; text-align:center;">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="pagination_controls" class="pagination-container"></div>
+</div>
+
+<div id="viewModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><span>👁️ Chi tiết thông tin nhà cung cấp</span><span style="cursor:pointer" onclick="closeModals()">×</span></div>
+        <div class="modal-body">
+            <div class="section-title">👤 Thông tin cơ bản</div>
+            <div class="form-grid">
+                <div class="form-group"><label>Mã nhà cung cấp</label><input type="text" id="v_ma" class="input-readonly" readonly></div>
+                <div class="form-group"><label>Tên nhà cung cấp</label><input type="text" id="v_ten" class="input-readonly" readonly></div>
+            </div>
+            <div class="section-title">📞 Thông tin liên hệ</div>
+            <div class="form-grid">
+                <div class="form-group"><label>Số điện thoại</label><input type="text" id="v_sdt" class="input-readonly" readonly></div>
+                <div class="form-group"><label>Số tài khoản ngân hàng</label><input type="text" id="v_stk" class="input-readonly" readonly></div>
+                <div class="form-group"><label>Địa chỉ</label><input type="text" id="v_diachi" class="input-readonly" readonly></div>
+                <div class="form-group"><label>Tên ngân hàng</label><input type="text" id="v_nganhang" class="input-readonly" readonly></div>
+            </div>
+        </div>
+        <div class="modal-footer"><button class="btn-save" onclick="closeModals()">Đóng</button></div>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><span>✏️ Sửa thông tin nhà cung cấp</span><span style="cursor:pointer" onclick="closeModals()">×</span></div>
+        <div class="modal-body">
+            <div class="section-title">👤 Thông tin cơ bản</div>
+            <div class="form-grid">
+                <div class="form-group"><label>Mã nhà cung cấp</label><input type="text" id="e_ma" class="input-readonly" readonly><span class="note-text">Không được sửa mã nhà cung cấp</span></div>
+                <div class="form-group"><label>Tên nhà cung cấp <span class="req">*</span></label><input type="text" id="e_ten"></div>
+            </div>
+            <div class="section-title">📞 Thông tin liên hệ</div>
+            <div class="form-grid">
+                <div class="form-group"><label>Số điện thoại <span class="req">*</span></label><input type="text" id="e_sdt"></div>
+                <div class="form-group"><label>Tên ngân hàng <span class="req">*</span></label><input type="text" id="e_nganhang" placeholder="Ví dụ: BIDV"></div>
+                <div class="form-group"><label>Địa chỉ</label><input type="text" id="e_diachi"></div>
+                <div class="form-group"><label>Số tài khoản <span class="req">*</span></label><input type="text" id="e_stk" placeholder="Nhập số tài khoản"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModals()">Hủy</button>
+            <button class="btn-save" onclick="updateNCC()">Cập nhật</button>
+        </div>
+    </div>
+</div>
+
+<div id="addModal" class="modal">
+    <div class="modal-content" style="width: 500px;">
+        <div class="modal-header"><span>+ Thêm nhà cung cấp</span><span style="cursor:pointer" onclick="closeModals()">×</span></div>
+        <div class="modal-body">
+            <div class="form-group"><label>Mã nhà cung cấp <span class="req">*</span></label><input type="text" id="a_ma"></div>
+            <div class="form-group"><label>Tên nhà cung cấp <span class="req">*</span></label><input type="text" id="a_ten"></div>
+            <div class="form-group"><label>Số điện thoại <span class="req">*</span></label><input type="text" id="a_sdt"></div>
+            <div class="form-group"><label>Địa chỉ</label><input type="text" id="a_diachi"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModals()">Hủy</button>
+            <button class="btn-save" onclick="saveNCC()">Lưu và tiếp tục</button>
+        </div>
+    </div>
+</div>
+
+<div id="deleteModal" class="modal">
+    <div class="delete-modal-content">
+        <div class="warning-icon">⚠️</div>
+        <div class="delete-title">Xác nhận xoá nhà cung cấp?</div>
+        <div class="delete-buttons">
+            <button class="btn-del-cancel" onclick="closeModals()">Quay lại</button>
+            <button class="btn-del-confirm" onclick="confirmDeleteNCC()">Xoá</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let nccToDelete = null; // Biến lưu mã NCC chuẩn bị xóa
+
+    function closeModals() {
+        document.getElementById('viewModal').style.display = 'none';
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('addModal').style.display = 'none';
+        document.getElementById('deleteModal').style.display = 'none'; // Đóng cả modal xóa
+    }
+    function openAddModal() { document.getElementById('addModal').style.display = 'block'; }
+
+    // --- API TẢI THỐNG KÊ ---
+    function updateStats() {
+        fetch("{% url 'api_dashboard_data' %}")
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('val_ncc').textContent = data.tong_ncc;
+                document.getElementById('val_don').textContent = data.don_nhap_hom_nay;
+                document.getElementById('val_tien').textContent = new Intl.NumberFormat('vi-VN').format(data.tong_chi_phi) + 'đ';
+            });
+    }
+
+    // --- API TÌM KIẾM & RENDER BẢNG ---
+    function searchNCC(page = 1) {
+        currentPage = page;
+        const q = document.getElementById('ncc_search').value;
+
+        fetch(`{% url 'api_search_ncc' %}?q=${q}&page=${page}`)
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector('#ncc_table tbody');
+                tbody.innerHTML = '';
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(ncc => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td style="padding:15px; border:1px solid #eee">${ncc.MaNCC}</td>
+                                <td style="padding:15px; border:1px solid #eee"><b>${ncc.TenNCC}</b></td>
+                                <td style="padding:15px; border:1px solid #eee">${ncc.SDT}</td>
+                                <td style="padding:15px; border:1px solid #eee">${ncc.DiaChi}</td>
+                                <td style="padding:15px; border:1px solid #eee; text-align:center;">
+                                    <button class="btn-action" title="Xem chi tiết" onclick="viewNCC('${ncc.MaNCC}')">👁️</button>
+                                    <button class="btn-action" title="Sửa" onclick="editNCC('${ncc.MaNCC}')">✏️</button>
+                                    <button class="btn-action" title="Xóa" onclick="deleteNCC('${ncc.MaNCC}')">🗑️</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    renderPagination(data);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Không tìm thấy dữ liệu.</td></tr>';
+                    document.getElementById('pagination_controls').innerHTML = '';
+                }
+            });
+    }
+
+    // --- CÁC API XEM / SỬA / THÊM (Giữ nguyên như trước) ---
+    function viewNCC(ma_ncc) {
+        fetch(`/api/ncc/${ma_ncc}/`).then(res => res.json()).then(res => {
+            if(res.status === 'success') {
+                const data = res.data;
+                document.getElementById('v_ma').value = data.MaNCC; document.getElementById('v_ten').value = data.TenNCC;
+                document.getElementById('v_sdt').value = data.SDT; document.getElementById('v_diachi').value = data.DiaChi;
+                document.getElementById('v_nganhang').value = data.TenNganHang; document.getElementById('v_stk').value = data.STK;
+                document.getElementById('viewModal').style.display = 'block';
+            }
+        });
+    }
+
+    function editNCC(ma_ncc) {
+        fetch(`/api/ncc/${ma_ncc}/`).then(res => res.json()).then(res => {
+            if(res.status === 'success') {
+                const data = res.data;
+                document.getElementById('e_ma').value = data.MaNCC; document.getElementById('e_ten').value = data.TenNCC;
+                document.getElementById('e_sdt').value = data.SDT; document.getElementById('e_diachi').value = data.DiaChi;
+                document.getElementById('e_nganhang').value = data.TenNganHang; document.getElementById('e_stk').value = data.STK;
+                document.getElementById('editModal').style.display = 'block';
+            }
+        });
+    }
+
+    function updateNCC() {
+        const ma = document.getElementById('e_ma').value;
+        const data = {
+            ten_ncc: document.getElementById('e_ten').value, sdt: document.getElementById('e_sdt').value,
+            dia_chi: document.getElementById('e_diachi').value, ten_ngan_hang: document.getElementById('e_nganhang').value, stk: document.getElementById('e_stk').value
+        };
+        fetch(`/api/ncc/${ma}/update/`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }, body: JSON.stringify(data) })
+        .then(res => res.json()).then(res => {
+            if(res.status === 'success') { alert('Cập nhật thành công!'); closeModals(); searchNCC(currentPage); }
+            else { alert('Lỗi: ' + res.message); }
+        });
+    }
+
+    function saveNCC() {
+        const data = {
+            ma_ncc: document.getElementById('a_ma').value.trim(), ten_ncc: document.getElementById('a_ten').value.trim(),
+            sdt: document.getElementById('a_sdt').value.trim(), dia_chi: document.getElementById('a_diachi').value.trim()
+        };
+        if (!data.ma_ncc || !data.ten_ncc || !data.sdt) return alert("Vui lòng nhập đủ thông tin có dấu (*)");
+        fetch("{% url 'api_create_ncc' %}", { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }, body: JSON.stringify(data) })
+        .then(res => res.json()).then(res => {
+            if(res.status === 'success') { alert('Thêm thành công!'); closeModals(); updateStats(); searchNCC(1); }
+        });
+    }
+
+    // ==========================================
+    // API XÓA NHÀ CUNG CẤP (MỚI)
+    // ==========================================
+    function deleteNCC(ma_ncc) {
+        nccToDelete = ma_ncc; // Lưu lại mã để xóa
+        document.getElementById('deleteModal').style.display = 'block'; // Mở modal xác nhận
+    }
+
+    // Hàm gọi API để xóa nhà cung cấp
+    function confirmDeleteNCC() {
+        if (!nccToDelete) return;
+
+        // 1. Gọi API gửi yêu cầu xóa xuống Backend
+        fetch(`/api/ncc/${nccToDelete}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'success') {
+                // 2. Đóng hộp thoại cảnh báo
+                closeModals();
+
+                // 3. Hiển thị thông báo xóa thành công
+                alert('Xóa nhà cung cấp thành công!');
+
+                // 4. Tự động cập nhật lại số liệu trên 3 thẻ Card (NCC hoạt động sẽ giảm đi)
+                updateStats();
+
+                // 5. Tự động tải lại danh sách bảng (Dòng chứa NCC vừa xóa sẽ biến mất)
+                searchNCC(currentPage);
+            } else {
+                alert('Lỗi: ' + res.message);
+            }
+        });
+    }
+
+    function renderPagination(data) {
+        const container = document.getElementById('pagination_controls'); container.innerHTML = '';
+        const prevBtn = document.createElement('button'); prevBtn.className = 'page-btn'; prevBtn.textContent = 'Trước'; prevBtn.disabled = !data.has_previous; prevBtn.onclick = () => searchNCC(data.current_page - 1); container.appendChild(prevBtn);
+        for (let i = 1; i <= data.total_pages; i++) {
+            const pageBtn = document.createElement('button'); pageBtn.className = `page-btn ${i === data.current_page ? 'active' : ''}`; pageBtn.textContent = i; pageBtn.onclick = () => searchNCC(i); container.appendChild(pageBtn);
+        }
+        const nextBtn = document.createElement('button'); nextBtn.className = 'page-btn'; nextBtn.textContent = 'Tiếp'; nextBtn.disabled = !data.has_next; nextBtn.onclick = () => searchNCC(data.current_page + 1); container.appendChild(nextBtn);
+    }
+
+    window.onload = () => { updateStats(); searchNCC(1); };
+</script>
+{% endblock %}
