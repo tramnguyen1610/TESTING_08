@@ -1,0 +1,682 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản lý nhập hàng - Kim Liên Minimart{% endblock %}
+
+{% block content %}
+<style>
+    /* HEADER & BỐ CỤC CHUNG */
+    .page-top-header { width: 100%; height: 126px; background-color: #FFFFFF; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; box-sizing: border-box; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
+    .nh-stats-row { display: flex; gap: 20px; margin-bottom: 20px; }
+    .nh-stat-card { background: #fff; border-radius: 12px; flex: 1; padding: 25px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+    .nh-stat-top { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+    .nh-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .nh-icon.clock { background: #FFF3E0; color: #FF9800; }
+    .nh-icon.tick { background: #E8F5E9; color: #4CAF50; }
+    .nh-icon.warn { background: #FFEBEE; color: #F44336; }
+    .nh-val { font-size: 24px; font-weight: bold; color: #000;}
+    .nh-lbl { font-size: 14px; color: #666; display: flex; flex-direction: column; align-items: center;}
+    .nh-bottom-bar { padding: 5px 15px; font-size: 12px; border-radius: 20px; text-align: center; }
+    .bar-green { background: #E8F5E9; color: #388E3C; }
+
+    .filter-row { display: flex; gap: 15px; margin-bottom: 20px; }
+    .search-box { flex: 1; background: #fff; border-radius: 25px; padding: 10px 20px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .search-box input { border: none; outline: none; width: 100%; padding-left: 10px; font-size:15px; }
+    .filter-select { padding: 10px 20px; border-radius: 25px; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.05); outline: none; }
+
+    .st-nhap { color: #FF9800; font-weight: 500; }
+    .st-hoan { color: #4CAF50; font-weight: 500; }
+
+    .btn-action { background: #f0f0f0; border: none; border-radius: 5px; padding: 6px 10px; cursor: pointer; margin-right: 5px; transition: 0.2s; }
+    .btn-action:hover { background: #FFC92A; }
+    .pagination-container { display: flex; justify-content: center; margin-top: 25px; gap: 8px; }
+    .page-btn { padding: 8px 16px; border: 1px solid #D1D5DB; background: #fff; border-radius: 8px; cursor: pointer; color: #1976D2; }
+    .page-btn.active { background-color: #2196F3; color: white; border-color: #2196F3; }
+
+    /* MODAL CHUNG */
+    .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+    .modal-content { background-color: #fff; margin: 2% auto; border-radius: 15px; width: 950px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); overflow: hidden; }
+    .modal-header { background-color: #FFD54F; padding: 15px 25px; font-weight: bold; font-size: 20px; display: flex; justify-content: space-between; align-items: center;}
+    .modal-body { padding: 30px; max-height: 65vh; overflow-y: auto; }
+    .modal-footer { padding: 20px; display: flex; justify-content: center; gap: 15px; background: #fafafa; border-top: 1px solid #eee; }
+
+    .btn-save { background-color: #FFD54F; border: none; padding: 12px 30px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+    .btn-cancel { background-color: #fff; border: 1px solid #ccc; padding: 12px 30px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+
+    .input-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .input-box label { font-size: 15px; color: #333; font-weight:bold; }
+    .input-box input, .input-box select { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; outline: none; }
+    .input-box input:focus, .input-box select:focus { border-color: #FFD54F; }
+    .input-readonly { background-color: #E0E0E0; color: #555; pointer-events: none;}
+    .req { color: red; }
+
+    /* CSS DROPDOWN TÌM KIẾM GIỚI HẠN 3 ITEM */
+    .custom-dropdown { position: relative; }
+    .custom-dropdown input[type="text"] { width: 100%; padding-right: 30px; box-sizing: border-box;}
+    .dropdown-arrow { position: absolute; right: 15px; top: 40px; font-size: 12px; color: #888; pointer-events: none; }
+    .custom-dropdown-list {
+        position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ccc;
+        border-radius: 8px; margin-top: 4px; padding: 0; list-style: none;
+        max-height: 126px; /* Giới hạn chiều cao khoảng 3 item */
+        overflow-y: auto; z-index: 1000; display: none;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        text-align: left;
+    }
+    .custom-dropdown-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 15px; margin: 0; }
+    .custom-dropdown-list li:last-child { border-bottom: none; }
+    .custom-dropdown-list li:hover { background-color: #FFF8E1; color: #FF9800; }
+
+    .sp-panel { border: 1px solid #E0E0E0; border-radius: 12px; padding: 20px; }
+    .sp-input-area { display: grid; grid-template-columns: 1fr 2fr 1fr 1.5fr 1.5fr auto; gap: 15px; align-items: end; margin-bottom: 20px; }
+    .sp-col { display: flex; flex-direction: column; gap: 5px; }
+    .sp-col label { font-weight: bold; font-size: 13px; background: #FFF8E1; padding: 8px; text-align: center; border-radius: 4px; margin:0;}
+    .sp-col input, .sp-col select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; text-align: center; width: 100%; box-sizing: border-box;}
+    .btn-add-sp { background-color: #4CAF50; color: white; border: none; padding: 10px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; height: 42px;}
+
+    /* BẢNG CUỘN VÀ CỐ ĐỊNH TỔNG TIỀN */
+    .table-scroll {
+        max-height: 250px;
+        overflow-y: auto;
+        border: 1px solid #eee;
+        border-radius: 8px;
+    }
+    .table-scroll table { width: 100%; border-collapse: collapse; text-align: center; }
+    .table-scroll thead th { position: sticky; top: 0; background: #FFF8E1; z-index: 2; border-bottom: 1px solid #ddd;}
+    .table-scroll tfoot td { position: sticky; bottom: 0; background: #FFF8E1; z-index: 2; font-weight: bold; border-top: 1px solid #ddd; }
+
+    .error-modal-content { background-color: #fff; margin: 15% auto; border-radius: 15px; width: 450px; text-align: center; padding: 40px 30px; }
+</style>
+
+<div class="page-top-header">
+    <div class="header-info">
+        <h2 style="margin:0; display:flex; align-items:center; gap:10px;"><img src="{% static 'icons/4_IconImportGoods.png' %}" style="width: 28px;" onerror="this.outerHTML='🚛'"> Quản lý Nhập hàng</h2>
+        <p style="margin:5px 0 0; color:#666">Trang chủ / Quản lý / Nhập hàng</p>
+    </div>
+    <button class="btn-save" onclick="openAddModal()" style="background-color: #4CAF50; color: white;">+ Tạo phiếu nhập mới</button>
+</div>
+
+<div class="nh-stats-row">
+    <div class="nh-stat-card">
+        <div class="nh-stat-top"><div class="nh-icon clock">🕒</div><div class="nh-lbl"><span class="nh-val" id="s_nhap">0</span>Chờ kiểm tra</div></div>
+    </div>
+    <div class="nh-stat-card">
+        <div class="nh-stat-top"><div class="nh-icon tick">✔️</div><div class="nh-lbl"><span class="nh-val" id="s_hoan">0</span>Hoàn thành</div></div>
+    </div>
+    <div class="nh-stat-card">
+        <div class="nh-stat-top"><div class="nh-icon warn">⚠️</div><div class="nh-lbl"><span class="nh-val" id="s_canhbao">0</span>Cảnh báo hết hạn</div></div>
+    </div>
+</div>
+
+<div class="filter-row">
+    <div class="search-box"><span><img src="{% static 'icons/16_IconSearch.png' %}"></span><input type="text" id="nhap_search" placeholder="Nhập mã phiếu..." onkeyup="searchPN(1)"></div>
+    <select class="filter-select" id="nhap_status" onchange="searchPN(1)">
+        <option value="Tất cả trạng thái">Tất cả trạng thái</option>
+        <option value="Chờ kiểm tra">Chờ kiểm tra</option>
+        <option value="Hoàn thành">Hoàn thành</option>
+    </select>
+</div>
+
+<div style="width: 100%; background: #fff; border-radius: 12px; padding: 30px; box-sizing: border-box;">
+    <h3 style="margin-top:0">Bảng danh sách phiếu nhập (<span id="tong_phieu">0</span>)</h3>
+    <table style="width:100%; border-collapse: collapse; text-align: center;" id="pn_table">
+        <thead style="background:#FFF8E1">
+            <tr>
+                <th style="padding:15px; border:1px solid #eee;">Mã phiếu</th>
+                <th style="padding:15px; border:1px solid #eee;">Mã NCC</th>
+                <th style="padding:15px; border:1px solid #eee;">Ngày nhập</th>
+                <th style="padding:15px; border:1px solid #eee;">Số lượng</th>
+                <th style="padding:15px; border:1px solid #eee;">Thành tiền</th>
+                <th style="padding:15px; border:1px solid #eee;">Tổng tiền</th>
+                <th style="padding:15px; border:1px solid #eee;">Trạng thái</th>
+                <th style="padding:15px; border:1px solid #eee;">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="pagination_controls" class="pagination-container"></div>
+</div>
+
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><span><span style="color:#4CAF50; font-size:24px;">+</span> Tạo phiếu nhập mới</span><span style="cursor:pointer" onclick="closeModals()">×</span></div>
+        <div class="modal-body">
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="input-box"><label>Mã phiếu: <span class="req">*</span></label><input type="text" id="a_ma_phieu" readonly class="input-readonly"></div>
+                <div class="input-box"><label>Ngày nhập: <span class="req">*</span></label><input type="date" id="a_ngay"></div>
+
+                <div class="input-box custom-dropdown" style="grid-column: 1 / 3;">
+                    <label>Nhà cung cấp: <span class="req">*</span></label>
+                    <input type="text" id="search_a_ncc" placeholder="Nhập hoặc chọn Nhà cung cấp..." autocomplete="off">
+                    <span class="dropdown-arrow">▼</span>
+                    <input type="hidden" id="a_ncc">
+                    <ul class="custom-dropdown-list" id="list_a_ncc">
+                        {% for ncc in ncc_list %}
+                            <li data-value="{{ ncc.MaNCC }}">{{ ncc.TenNCC }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="sp-panel">
+                <div style="font-weight:bold; margin-bottom:15px;">Thông tin lô hàng</div>
+                <div class="sp-input-area">
+                    <div class="sp-col"><label>Mã LH <span class="req">*</span></label><input type="text" id="sp_ma_lo" readonly class="input-readonly"></div>
+
+                    <div class="sp-col custom-dropdown" style="text-align: left;">
+                        <label>Tên sản phẩm <span class="req">*</span></label>
+                        <input type="text" id="search_sp_ten" placeholder="Nhập / Chọn SP..." autocomplete="off" style="text-align: left; padding-right: 25px;">
+                        <span class="dropdown-arrow" style="top: 38px;">▼</span>
+                        <input type="hidden" id="sp_ten">
+                        <ul class="custom-dropdown-list" id="list_sp_ten">
+                            {% for sp in sp_list %}
+                                <li data-value="{{ sp.TenSP }}">{{ sp.TenSP }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="sp-col"><label>SL <span class="req">*</span></label><input type="number" id="sp_sl" placeholder="SL > 0"></div>
+                    <div class="sp-col"><label>HSD <span class="req">*</span></label><input type="date" id="sp_hsd"></div>
+                    <div class="sp-col"><label>Đơn giá(VNĐ) <span class="req">*</span></label><input type="number" id="sp_gia" placeholder="Giá > 0"></div>
+                    <button class="btn-add-sp" onclick="addTempProduct()">+ Thêm</button>
+                </div>
+
+                <div style="font-weight:bold; margin-bottom:10px;">Danh sách lô hàng</div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr><th style="padding:10px;">Mã LH</th><th style="padding:10px;">Tên sản phẩm</th><th style="padding:10px;">SL</th><th style="padding:10px;">HSD</th><th style="padding:10px;">Đơn giá(VNĐ)</th><th style="padding:10px;">Thành tiền</th><th style="padding:10px;">Thao tác</th></tr>
+                        </thead>
+                        <tbody id="temp_sp_list">
+                            <tr><td colspan="7" style="padding:40px; color:#999; background:#F5F5F5;">Chưa có lô hàng nào được thêm</td></tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" style="text-align:right; padding:15px; font-size:16px;">Tổng tiền phiếu nhập:</td>
+                                <td colspan="2" style="padding:15px; color:red; font-size:16px; text-align:left;" id="temp_tong_tien">0đ</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer"><button class="btn-cancel" onclick="closeModals()">Hủy</button><button class="btn-save" onclick="savePhieuNhap()">Lưu phiếu nhập</button></div>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><span>✏️ Sửa thông tin phiếu nhập</span><span style="cursor:pointer" onclick="closeModals()">×</span></div>
+        <div class="modal-body">
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom: 20px;">
+                <div class="input-box"><label>Mã phiếu</label><input type="text" id="e_ma" readonly class="input-readonly"></div>
+                <div class="input-box"><label>Ngày nhập <span class="req">*</span></label><input type="date" id="e_ngay"></div>
+
+                <div class="input-box custom-dropdown">
+                    <label>Nhà cung cấp: <span class="req">*</span></label>
+                    <input type="text" id="search_e_ncc" placeholder="Nhập hoặc chọn..." autocomplete="off">
+                    <span class="dropdown-arrow">▼</span>
+                    <input type="hidden" id="e_ncc">
+                    <ul class="custom-dropdown-list" id="list_e_ncc">
+                        {% for ncc in ncc_list %}
+                            <li data-value="{{ ncc.MaNCC }}">{{ ncc.TenNCC }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="input-box">
+                    <label>Trạng thái</label>
+                    <select id="e_trangthai">
+                        <option value="Chờ kiểm tra">Chờ kiểm tra</option>
+                        <option value="Hoàn thành">Hoàn thành</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="sp-panel" style="margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="font-weight:bold; font-size:16px;">Danh sách lô hàng</div>
+                    <button class="btn-add-sp" style="height:35px;" onclick="openAddBatchEditPopup()">+ Thêm lô hàng</button>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr><th style="padding:10px;">Mã LH</th><th style="padding:10px;">Tên sản phẩm</th><th style="padding:10px;">SL</th><th style="padding:10px;">HSD</th><th style="padding:10px;">Đơn giá(VNĐ)</th><th style="padding:10px;">Thành tiền</th><th style="padding:10px;">Thao tác</th></tr>
+                        </thead>
+                        <tbody id="edit_sp_list"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" style="text-align:right; padding:15px; font-size:16px;">Tổng tiền phiếu nhập:</td>
+                                <td colspan="2" style="padding:15px; color:red; font-size:16px; text-align:left;" id="edit_tong_tien">0đ</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer"><button class="btn-cancel" onclick="closeModals()">Hủy</button><button class="btn-save" onclick="updatePhieuNhap()">Cập nhật</button></div>
+    </div>
+</div>
+
+<div id="addBatchEditPopup" class="modal" style="z-index: 200; background-color: rgba(0,0,0,0.6);">
+    <div class="modal-content" style="width: 500px; margin: 10% auto;">
+        <div class="modal-header"><span>+ Thêm lô hàng mới</span><span style="cursor:pointer" onclick="document.getElementById('addBatchEditPopup').style.display='none'">×</span></div>
+        <div class="modal-body">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="input-box"><label>Mã Lô</label><input type="text" id="pe_ma_lo" readonly class="input-readonly"></div>
+
+                <div class="input-box custom-dropdown">
+                    <label>Tên sản phẩm <span class="req">*</span></label>
+                    <input type="text" id="search_pe_ten" placeholder="Nhập hoặc chọn SP..." autocomplete="off">
+                    <span class="dropdown-arrow">▼</span>
+                    <input type="hidden" id="pe_ten">
+                    <ul class="custom-dropdown-list" id="list_pe_ten">
+                        {% for sp in sp_list %}
+                            <li data-value="{{ sp.TenSP }}">{{ sp.TenSP }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="input-box"><label>Số lượng <span class="req">*</span></label><input type="number" id="pe_sl" placeholder="> 0"></div>
+                <div class="input-box"><label>Đơn giá <span class="req">*</span></label><input type="number" id="pe_gia" placeholder="> 0"></div>
+                <div class="input-box" style="grid-column: 1 / 3;"><label>Hạn sử dụng <span class="req">*</span></label><input type="date" id="pe_hsd"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="document.getElementById('addBatchEditPopup').style.display='none'">Hủy</button>
+            <button class="btn-save" onclick="confirmAddBatchEdit()">Thêm vào danh sách</button>
+        </div>
+    </div>
+</div>
+
+<div id="viewModal" class="modal">
+    <div class="modal-content" style="width: 800px;">
+        <div class="modal-header"><span>👁️ Chi tiết phiếu nhập hàng</span><span style="cursor:pointer" onclick="closeModals()">×</span></div>
+        <div class="modal-body">
+
+            <div style="display: flex; gap: 30px; margin-bottom: 20px; background: #FFFDE7; padding: 20px; border-radius: 8px;">
+                <div><span style="color:#666; font-size:14px;">Mã phiếu:</span><br><b id="v_ma" style="font-size:18px;"></b></div>
+                <div><span style="color:#666; font-size:14px;">Ngày nhập:</span><br><b id="v_ngay" style="font-size:18px;"></b></div>
+                <div><span style="color:#666; font-size:14px;">Nhà cung cấp:</span><br><b id="v_ncc" style="font-size:18px;"></b></div>
+                <div><span style="color:#666; font-size:14px;">Trạng thái:</span><br><b id="v_trangthai" style="font-size:18px;"></b></div>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr><th style="padding:10px;">Mã Lô</th><th style="padding:10px;">Tên sản phẩm</th><th style="padding:10px;">SL</th><th style="padding:10px;">Đơn giá</th><th style="padding:10px;">Thành tiền</th></tr>
+                    </thead>
+                    <tbody id="v_product_list"></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align:right; padding:15px; font-size:16px;">Tổng tiền phiếu nhập:</td>
+                            <td style="padding:15px; color:red; font-size:16px; text-align:center;" id="v_tong_tien">0đ</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+        </div>
+        <div class="modal-footer"><button class="btn-save" onclick="closeModals()" style="width:150px;">Đóng</button></div>
+    </div>
+</div>
+
+<div id="deleteModal" class="modal">
+    <div class="error-modal-content">
+        <div style="font-size: 80px; color:#FFD54F;">⚠️</div>
+        <div style="font-size: 20px; font-weight: bold; margin: 20px 0;">Xác nhận xoá phiếu nhập hàng?</div>
+        <div style="display: flex; justify-content: center; gap: 20px;">
+            <button class="btn-cancel" onclick="closeModals()">Quay lại</button>
+            <button class="btn-save" onclick="confirmDeletePN()">Xoá</button>
+        </div>
+    </div>
+</div>
+
+<div id="errorDeleteModal" class="modal">
+    <div class="error-modal-content">
+        <div style="font-size: 80px; color:#FFD54F;">⚠️</div>
+        <div style="font-size: 20px; font-weight: bold; margin: 20px 0;">Lỗi: Phiếu nhập này đã hoàn thành.<br>Không thể xóa</div>
+        <button class="btn-cancel" onclick="closeModals()" style="width:150px;">Quay lại</button>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1; let pnToDelete = null; let tempProducts = [];
+    let editProducts = [];
+    let nextMaLoInt = 0;
+
+    // HÀM SETUP CUSTOM DROPDOWN TÌM KIẾM
+    function setupCustomSelect(searchId, listId, hiddenId) {
+        const input = document.getElementById(searchId);
+        const list = document.getElementById(listId);
+        const hidden = document.getElementById(hiddenId);
+        const items = list.querySelectorAll('li');
+
+        input.addEventListener('focus', () => {
+            list.style.display = 'block';
+            items.forEach(item => item.style.display = 'block'); // Hiện lại toàn bộ khi focus
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!input.contains(e.target) && !list.contains(e.target)) {
+                list.style.display = 'none';
+            }
+        });
+
+        input.addEventListener('input', () => {
+            // Cho phép người dùng gõ Tên Sản Phẩm tự do, đồng bộ luôn giá trị
+            hidden.value = input.value;
+
+            const filter = input.value.toLowerCase();
+            list.style.display = 'block';
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(filter) ? 'block' : 'none';
+            });
+            if (input.value.trim() === '') hidden.value = '';
+        });
+
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                input.value = item.textContent;
+                hidden.value = item.getAttribute('data-value');
+                list.style.display = 'none';
+            });
+        });
+    }
+
+    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+
+    function updateStats() {
+        fetch("{% url 'api_nhaphang_stats' %}").then(res => res.json()).then(data => {
+            document.getElementById('s_nhap').textContent = data.nhap;
+            document.getElementById('s_hoan').textContent = data.hoan_thanh;
+            document.getElementById('s_canhbao').textContent = data.canh_bao;
+        });
+    }
+
+    function searchPN(page = 1) {
+        currentPage = page;
+        const q = document.getElementById('nhap_search').value;
+        const st = document.getElementById('nhap_status').value;
+
+        fetch(`{% url 'api_search_nhaphang' %}?q=${q}&status=${st}&page=${page}`)
+            .then(res => res.json()).then(data => {
+                document.getElementById('tong_phieu').textContent = data.total_items;
+                const tbody = document.querySelector('#pn_table tbody'); tbody.innerHTML = '';
+
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(pn => {
+                        let stClass = pn.TrangThai === 'Hoàn thành' ? 'st-hoan' : 'st-nhap';
+                        let editBtnHtml = pn.TrangThai === 'Chờ kiểm tra'
+                            ? `<button class="btn-action" onclick="editPN('${pn.MaPhieu}')">✏️</button>`
+                            : `<button class="btn-action" style="opacity: 0.4; cursor: not-allowed;">✏️</button>`;
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td style="padding:15px; border:1px solid #eee">${pn.MaPhieu}</td>
+                                <td style="padding:15px; border:1px solid #eee">${pn.MaNCC}</td>
+                                <td style="padding:15px; border:1px solid #eee">${pn.NgayNhap}</td>
+                                <td style="padding:15px; border:1px solid #eee">${pn.SoLuong}</td>
+                                <td style="padding:15px; border:1px solid #eee">${new Intl.NumberFormat('vi-VN').format(pn.ThanhTien)}đ</td>
+                                <td style="padding:15px; border:1px solid #eee">${new Intl.NumberFormat('vi-VN').format(pn.TongTien)}đ</td>
+                                <td style="padding:15px; border:1px solid #eee;" class="${stClass}">${pn.TrangThai}</td>
+                                <td style="padding:15px; border:1px solid #eee; text-align:center;">
+                                    <button class="btn-action" onclick="viewPN('${pn.MaPhieu}')">👁️</button>
+                                    ${editBtnHtml}
+                                    <button class="btn-action" onclick="deletePN('${pn.MaPhieu}', '${pn.TrangThai}')" style="color:red;">🗑️</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    renderPagination(data);
+                } else { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999; padding:20px;">Không có dữ liệu.</td></tr>'; document.getElementById('pagination_controls').innerHTML = ''; }
+            });
+    }
+
+    // --- THÊM PHIẾU MỚI ---
+    function openAddModal() {
+        tempProducts = [];
+        renderTempProducts();
+
+        // Reset Dropdowns
+        document.getElementById('search_a_ncc').value = ""; document.getElementById('a_ncc').value = "";
+        document.getElementById('search_sp_ten').value = ""; document.getElementById('sp_ten').value = "";
+
+        document.getElementById('a_ngay').value = "";
+        document.getElementById('addModal').style.display = 'block';
+
+        fetch("{% url 'get_next_ma_phieu' %}").then(res => res.json()).then(data => { document.getElementById('a_ma_phieu').value = data.next_id; });
+        fetch("{% url 'get_next_ma_lo' %}").then(res => res.json()).then(data => {
+            document.getElementById('sp_ma_lo').value = data.next_id;
+            nextMaLoInt = parseInt(data.next_id.replace(/\D/g, ''));
+        });
+    }
+
+    function addTempProduct() {
+        const ma = document.getElementById('sp_ma_lo').value;
+        const ten = document.getElementById('sp_ten').value; // Lấy từ input ẩn (sau khi search hoặc gõ)
+        const sl = parseInt(document.getElementById('sp_sl').value);
+        const gia = parseFloat(document.getElementById('sp_gia').value);
+        const hsd = document.getElementById('sp_hsd').value;
+
+        if(!ma || !ten || !sl || !gia || !hsd) return alert('Vui lòng nhập đủ thông tin Lô hàng!');
+        if(sl <= 0 || gia <= 0) return alert('Số lượng và Đơn giá phải lớn hơn 0!');
+
+        tempProducts.push({ ma_lo: ma, ten: ten, sl: sl, hsd: hsd, gia: gia, total: sl * gia });
+
+        nextMaLoInt += 1;
+        document.getElementById('sp_ma_lo').value = 'LH' + nextMaLoInt.toString().padStart(3, '0');
+
+        // Reset lại form thêm sản phẩm nhỏ
+        document.getElementById('search_sp_ten').value = ''; document.getElementById('sp_ten').value = '';
+        document.getElementById('sp_sl').value = ''; document.getElementById('sp_gia').value = ''; document.getElementById('sp_hsd').value = '';
+        renderTempProducts();
+    }
+
+    function removeTempProduct(index) { tempProducts.splice(index, 1); renderTempProducts(); }
+
+    function renderTempProducts() {
+        const tbody = document.getElementById('temp_sp_list');
+        let totalSum = 0;
+
+        if(tempProducts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="padding:40px; color:#999; background:#F5F5F5;">Chưa có lô hàng nào được thêm</td></tr>';
+            document.getElementById('temp_tong_tien').textContent = '0đ';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        tempProducts.forEach((sp, idx) => {
+            totalSum += sp.total;
+            tbody.innerHTML += `<tr><td style="border-bottom:1px solid #eee; padding:10px;">${sp.ma_lo}</td><td style="border-bottom:1px solid #eee; padding:10px;">${sp.ten}</td><td style="border-bottom:1px solid #eee; padding:10px;">${sp.sl}</td><td style="border-bottom:1px solid #eee; padding:10px;">${sp.hsd}</td><td style="border-bottom:1px solid #eee; padding:10px;">${new Intl.NumberFormat('vi-VN').format(sp.gia)}đ</td><td style="border-bottom:1px solid #eee; padding:10px;">${new Intl.NumberFormat('vi-VN').format(sp.total)}đ</td><td style="border-bottom:1px solid #eee; padding:10px;"><button onclick="removeTempProduct(${idx})" style="color:red; border:none; background:none; cursor:pointer;">🗑️</button></td></tr>`;
+        });
+        document.getElementById('temp_tong_tien').textContent = new Intl.NumberFormat('vi-VN').format(totalSum) + 'đ';
+    }
+
+    function savePhieuNhap() {
+        const ma_pn = document.getElementById('a_ma_phieu').value;
+        const ncc = document.getElementById('a_ncc').value, ngay = document.getElementById('a_ngay').value;
+
+        if(!ngay || !ncc) return alert("Vui lòng nhập đủ thông tin Phiếu nhập!");
+        if(tempProducts.length === 0) return alert("Vui lòng thêm sản phẩm!");
+
+        fetch("{% url 'api_create_nhaphang' %}", { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }, body: JSON.stringify({ ma_phieu: ma_pn, ngay_nhap: ngay, ma_ncc: ncc, san_phams: tempProducts }) })
+        .then(res => res.json()).then(res => {
+            if(res.status === 'success') { alert('Tạo phiếu thành công!'); closeModals(); updateStats(); searchPN(1); }
+            else alert('Lỗi: ' + res.message);
+        });
+    }
+
+    // --- SỬA PHIẾU NHẬP ---
+    function editPN(ma_phieu) {
+        fetch(`/api/nhaphang/${ma_phieu}/`).then(res => res.json()).then(res => {
+            if(res.status === 'success') {
+                if(res.data.TrangThai === 'Hoàn thành') { alert('Phiếu nhập đã hoàn thành, không thể chỉnh sửa!'); return; }
+
+                document.getElementById('e_ma').value = res.data.MaPhieu;
+                document.getElementById('e_ngay').value = res.data.NgayNhap;
+                document.getElementById('e_trangthai').value = res.data.TrangThai;
+
+                // Set dữ liệu Custom Dropdown
+                document.getElementById('e_ncc').value = res.data.MaNCC;
+                document.getElementById('search_e_ncc').value = res.data.TenNCC;
+
+                editProducts = res.data.SanPham;
+                renderEditProducts();
+                document.getElementById('editModal').style.display = 'block';
+            }
+        });
+    }
+
+    function renderEditProducts() {
+        const tbody = document.getElementById('edit_sp_list');
+        let totalSum = 0;
+
+        if(editProducts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="padding:20px; color:#999; background:#F5F5F5;">Danh sách lô hàng trống</td></tr>';
+            document.getElementById('edit_tong_tien').textContent = '0đ';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        editProducts.forEach((sp, idx) => {
+            totalSum += sp.total;
+            tbody.innerHTML += `
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${sp.ma_lo}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${sp.ten}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${sp.sl}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${sp.hsd}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${new Intl.NumberFormat('vi-VN').format(sp.gia)}đ</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${new Intl.NumberFormat('vi-VN').format(sp.total)}đ</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; color:red; cursor:pointer;" onclick="removeEditProduct(${idx})">🗑️</td>
+                </tr>
+            `;
+        });
+        document.getElementById('edit_tong_tien').textContent = new Intl.NumberFormat('vi-VN').format(totalSum) + 'đ';
+    }
+
+    function removeEditProduct(index) { editProducts.splice(index, 1); renderEditProducts(); }
+
+    function openAddBatchEditPopup() {
+        fetch("{% url 'get_next_ma_lo' %}").then(res => res.json()).then(data => {
+            document.getElementById('pe_ma_lo').value = data.next_id;
+            nextMaLoInt = parseInt(data.next_id.replace(/\D/g, ''));
+
+            document.getElementById('search_pe_ten').value = ''; document.getElementById('pe_ten').value = '';
+            document.getElementById('pe_sl').value = ''; document.getElementById('pe_gia').value = ''; document.getElementById('pe_hsd').value = '';
+
+            document.getElementById('addBatchEditPopup').style.display = 'block';
+        });
+    }
+
+    function confirmAddBatchEdit() {
+        const ma = document.getElementById('pe_ma_lo').value;
+        const ten = document.getElementById('pe_ten').value;
+        const sl = parseInt(document.getElementById('pe_sl').value);
+        const gia = parseFloat(document.getElementById('pe_gia').value);
+        const hsd = document.getElementById('pe_hsd').value;
+
+        if(!ma || !ten || !sl || !gia || !hsd) return alert('Vui lòng nhập đủ thông tin!');
+        if(sl <= 0 || gia <= 0) return alert('Số lượng và Đơn giá phải lớn hơn 0!');
+
+        editProducts.push({ ma_lo: ma, ten: ten, sl: sl, hsd: hsd, gia: gia, total: sl * gia });
+        renderEditProducts();
+
+        nextMaLoInt += 1;
+        document.getElementById('pe_ma_lo').value = 'LH' + nextMaLoInt.toString().padStart(3, '0');
+        document.getElementById('addBatchEditPopup').style.display = 'none';
+    }
+
+    function updatePhieuNhap() {
+        const ma = document.getElementById('e_ma').value;
+        const ncc = document.getElementById('e_ncc').value;
+        const ngay = document.getElementById('e_ngay').value;
+
+        if(!ngay || !ncc) return alert("Vui lòng nhập đủ thông tin Phiếu nhập!");
+        if(editProducts.length === 0) return alert("Vui lòng thêm sản phẩm!");
+
+        const payload = { ma_ncc: ncc, ngay_nhap: ngay, trang_thai: document.getElementById('e_trangthai').value, san_phams: editProducts };
+        fetch(`/api/nhaphang/${ma}/update/`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }, body: JSON.stringify(payload) })
+        .then(res => res.json()).then(res => {
+            if(res.status === 'success') { alert('Cập nhật thành công!'); closeModals(); searchPN(currentPage); updateStats();}
+            else alert('Lỗi: ' + res.message);
+        });
+    }
+
+    // --- CHI TIẾT (VIEW) ---
+    function viewPN(ma_phieu) {
+        fetch(`/api/nhaphang/${ma_phieu}/`).then(res => res.json()).then(res => {
+            if(res.status === 'success') {
+                const data = res.data;
+                document.getElementById('v_ma').textContent = data.MaPhieu;
+                document.getElementById('v_ngay').textContent = data.NgayNhap;
+                document.getElementById('v_ncc').textContent = data.TenNCC; // Lấy đúng tên NCC
+                document.getElementById('v_trangthai').textContent = data.TrangThai;
+
+                const tbody = document.getElementById('v_product_list');
+                tbody.innerHTML = '';
+                if(data.SanPham.length > 0) {
+                    data.SanPham.forEach(sp => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td style="padding:10px; border-bottom:1px solid #eee;">${sp.ma_lo}</td>
+                                <td style="padding:10px; border-bottom:1px solid #eee;">${sp.ten}</td>
+                                <td style="padding:10px; border-bottom:1px solid #eee;">${sp.sl}</td>
+                                <td style="padding:10px; border-bottom:1px solid #eee;">${new Intl.NumberFormat('vi-VN').format(sp.gia)}đ</td>
+                                <td style="padding:10px; border-bottom:1px solid #eee;">${new Intl.NumberFormat('vi-VN').format(sp.total)}đ</td>
+                            </tr>
+                        `;
+                    });
+                }
+                document.getElementById('v_tong_tien').textContent = new Intl.NumberFormat('vi-VN').format(data.TongTien) + 'đ';
+                document.getElementById('viewModal').style.display = 'block';
+            }
+        });
+    }
+
+    // --- XÓA ---
+    function deletePN(ma_phieu, trang_thai) {
+        if(trang_thai === 'Hoàn thành') document.getElementById('errorDeleteModal').style.display = 'block';
+        else { pnToDelete = ma_phieu; document.getElementById('deleteModal').style.display = 'block'; }
+    }
+
+    function confirmDeletePN() {
+        fetch(`/api/nhaphang/${pnToDelete}/delete/`, { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
+        .then(res => res.json()).then(res => {
+            if(res.status === 'success') { alert('Đã xóa thành công!'); closeModals(); updateStats(); searchPN(currentPage); }
+        });
+    }
+
+    function renderPagination(data) {
+        const container = document.getElementById('pagination_controls'); container.innerHTML = '';
+        const prevBtn = document.createElement('button'); prevBtn.className = 'page-btn'; prevBtn.textContent = 'Trước'; prevBtn.disabled = !data.has_previous; prevBtn.onclick = () => searchPN(data.current_page - 1); container.appendChild(prevBtn);
+        for (let i = 1; i <= data.total_pages; i++) {
+            const pageBtn = document.createElement('button'); pageBtn.className = `page-btn ${i === data.current_page ? 'active' : ''}`; pageBtn.textContent = i; pageBtn.onclick = () => searchPN(i); container.appendChild(pageBtn);
+        }
+        const nextBtn = document.createElement('button'); nextBtn.className = 'page-btn'; nextBtn.textContent = 'Tiếp'; nextBtn.disabled = !data.has_next; nextBtn.onclick = () => searchPN(data.current_page + 1); container.appendChild(nextBtn);
+    }
+
+    window.onload = () => {
+        updateStats();
+        searchPN(1);
+
+        // Khởi tạo tính năng tìm kiếm cho Custom Dropdown (Form Thêm và Form Sửa)
+        setupCustomSelect('search_a_ncc', 'list_a_ncc', 'a_ncc');
+        setupCustomSelect('search_e_ncc', 'list_e_ncc', 'e_ncc');
+
+        setupCustomSelect('search_sp_ten', 'list_sp_ten', 'sp_ten');
+        setupCustomSelect('search_pe_ten', 'list_pe_ten', 'pe_ten');
+
+        // Kiểm tra xem có lệnh mở form Tạo Phiếu Nhập từ Dashboard không
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('action') === 'add') {
+            openAddModal();
+            // Xóa tham số khỏi URL để khi F5 không bị mở lại form
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    };
+</script>
+{% endblock %}

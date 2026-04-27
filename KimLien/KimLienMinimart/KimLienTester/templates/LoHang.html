@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản lý Lô hàng - Kim Liên Minimart{% endblock %}
+
+{% block content %}
+<style>
+    /* HEADER */
+    .page-top-header { width: 100%; height: 126px; background-color: #FFFFFF; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; box-sizing: border-box; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
+    
+    /* BOX CẢNH BÁO HẾT HẠN */
+    .warning-section { width: 100%; background-color: #FFF8E1; border-radius: 12px; padding: 20px; margin-bottom: 30px; box-sizing: border-box; border: 1px solid #FFECB3; }
+    .warning-header { text-align: center; font-size: 18px; color: #000; margin-bottom: 15px; font-weight: bold; }
+    .warning-list { display: flex; flex-direction: column; gap: 10px; }
+    .warning-item { background-color: #FFFFFF; min-height: 45px; padding: 10px 20px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .text-red { color: #ED1B24; font-weight: 500; }
+    .text-green { color: #4CAF50; font-weight: 500; }
+
+    /* BỘ LỌC & BẢNG */
+    .filter-row { display: flex; gap: 15px; margin-bottom: 20px; }
+    .search-box { flex: 1; background: #fff; border-radius: 25px; padding: 10px 20px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .search-box input { border: none; outline: none; width: 100%; padding-left: 10px; font-size: 15px;}
+    .filter-select { padding: 10px 20px; border-radius: 25px; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.05); outline: none; }
+
+    .pagination-container { display: flex; justify-content: center; margin-top: 25px; gap: 8px; }
+    .page-btn { padding: 8px 16px; border: 1px solid #D1D5DB; background: #fff; border-radius: 8px; cursor: pointer; color: #1976D2; }
+    .page-btn.active { background-color: #2196F3; color: white; border-color: #2196F3; }
+</style>
+
+<div class="page-top-header">
+    <div class="header-info">
+        <h2 style="margin:0; display:flex; align-items:center; gap:10px;"><img src="{% static 'icons/5_IconShipment.png' %}" style="width:28px;"> Quản lý Lô hàng</h2>
+        <p style="margin:5px 0 0; color:#666">Trang chủ / Quản lý / Lô hàng</p>
+    </div>
+</div>
+
+<div class="warning-section">
+    <div class="warning-header">
+        <span class="text-red">⏰</span> Cảnh báo hết hạn (<span id="val_so_luong_canh_bao">0</span>)
+    </div>
+    <div class="warning-list" id="warning_list_container">
+        <div class="warning-item" style="color: #999;">Đang tải dữ liệu cảnh báo...</div>
+    </div>
+</div>
+
+<div class="filter-row">
+    <div class="search-box">
+        <span><img src="{% static 'icons/16_IconSearch.png' %}"></span>
+        <input type="text" id="lo_search" placeholder="Nhập mã lô, tên sản phẩm..." onkeyup="searchLH(1)">
+    </div>
+    <select class="filter-select" id="lo_status" onchange="searchLH(1)">
+        <option value="Tất cả trạng thái">Tất cả trạng thái</option>
+        <option value="Bình thường">Bình thường</option>
+        <option value="Sắp hết hạn">Sắp hết hạn</option>
+        <option value="Đã hết hạn">Đã hết hạn</option>
+    </select>
+</div>
+
+<div style="width: 100%; background: #fff; border-radius: 12px; padding: 30px; box-sizing: border-box;">
+    <h3 style="margin-top:0">Danh sách lô hàng (<span id="tong_so_lo">0</span>)</h3>
+    <table style="width:100%; border-collapse: collapse; text-align: center;" id="lo_table">
+        <thead style="background:#FFF8E1">
+            <tr>
+                <th style="padding:15px; border:1px solid #eee;">Mã lô hàng</th>
+                <th style="padding:15px; border:1px solid #eee; text-align:left;">Tên sản phẩm</th>
+                <th style="padding:15px; border:1px solid #eee;">Số lượng nhập</th>
+                <th style="padding:15px; border:1px solid #eee;">Ngày nhập</th>
+                <th style="padding:15px; border:1px solid #eee;">HSD</th>
+                <th style="padding:15px; border:1px solid #eee;">Trạng thái</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="pagination_controls" class="pagination-container"></div>
+</div>
+
+<script>
+    let currentPage = 1;
+
+    // --- 1. TẢI DỮ LIỆU CẢNH BÁO ---
+    function updateStats() {
+        fetch("{% url 'api_lohang_stats' %}").then(res => res.json()).then(data => {
+            const container = document.getElementById('warning_list_container');
+            container.innerHTML = '';
+
+            // 1. Nếu cơ sở dữ liệu trống rỗng (0 lô hàng)
+            if (data.tong_lohang === 0) {
+                container.innerHTML = `<div class="warning-item" style="color: #999; justify-content: center;">Chưa có dữ liệu lô hàng</div>`;
+            }
+            // 2. Nếu có lô hàng sắp/đã hết hạn cần cảnh báo
+            else if (data.canh_bao_lo_hang && data.canh_bao_lo_hang.length > 0) {
+                data.canh_bao_lo_hang.forEach(lo => {
+                    container.innerHTML += `
+                        <div class="warning-item">
+                            ${lo.TenSP} (Lô: ${lo.MaLH} - HSD: <span style="color:red; margin:0 4px">${lo.HSD}</span> - Tồn: ${lo.SoLuong})
+                        </div>
+                    `;
+                });
+            }
+            // 3. Nếu có lô hàng nhưng không lô nào bị hết hạn
+            else {
+                container.innerHTML = `<div class="warning-item" style="color: #4CAF50; justify-content: center;">Tất cả lô hàng đều trong tình trạng tốt!</div>`;
+            }
+        });
+    }
+
+    // --- 2. TÌM KIẾM & RENDER BẢNG ---
+    function searchLH(page = 1) {
+        currentPage = page;
+        const q = document.getElementById('lo_search').value;
+        const st = document.getElementById('lo_status').value;
+
+        fetch(`{% url 'api_search_lohang' %}?q=${q}&status=${st}&page=${page}`)
+            .then(res => res.json()).then(data => {
+                
+                // Cập nhật tổng số lượng lô hàng trên tiêu đề bảng
+                document.getElementById('tong_so_lo').textContent = data.total_items;
+
+                const tbody = document.querySelector('#lo_table tbody'); 
+                tbody.innerHTML = '';
+                
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(lo => {
+                        // Chọn màu trạng thái
+                        let stClass = lo.TrangThai === 'Bình thường' ? 'text-green' : 'text-red';
+                        
+                        tbody.innerHTML += `
+                            <tr>
+                                <td style="padding:15px; border:1px solid #eee">${lo.MaLH}</td>
+                                <td style="padding:15px; border:1px solid #eee; text-align:left;">${lo.TenSP}</td>
+                                <td style="padding:15px; border:1px solid #eee">${lo.SoLuong}</td>
+                                <td style="padding:15px; border:1px solid #eee">${lo.NgayNhap}</td>
+                                <td style="padding:15px; border:1px solid #eee">${lo.HSD}</td>
+                                <td style="padding:15px; border:1px solid #eee" class="${stClass}">${lo.TrangThai}</td>
+                            </tr>
+                        `;
+                    });
+                    renderPagination(data);
+                } else { 
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">Chưa có dữ liệu lô hàng</td></tr>';
+                    document.getElementById('pagination_controls').innerHTML = ''; 
+                }
+            });
+    }
+
+    // --- 3. PHÂN TRANG ---
+    function renderPagination(data) {
+        const container = document.getElementById('pagination_controls'); container.innerHTML = '';
+        const prevBtn = document.createElement('button'); prevBtn.className = 'page-btn'; prevBtn.textContent = 'Trước'; prevBtn.disabled = !data.has_previous; prevBtn.onclick = () => searchLH(data.current_page - 1); container.appendChild(prevBtn);
+        for (let i = 1; i <= data.total_pages; i++) {
+            const pageBtn = document.createElement('button'); pageBtn.className = `page-btn ${i === data.current_page ? 'active' : ''}`; pageBtn.textContent = i; pageBtn.onclick = () => searchLH(i); container.appendChild(pageBtn);
+        }
+        const nextBtn = document.createElement('button'); nextBtn.className = 'page-btn'; nextBtn.textContent = 'Tiếp'; nextBtn.disabled = !data.has_next; nextBtn.onclick = () => searchLH(data.current_page + 1); container.appendChild(nextBtn);
+    }
+
+    // --- CHẠY KHI TẢI TRANG ---
+    window.onload = () => { 
+        updateStats(); 
+        searchLH(1); 
+    };
+</script>
+{% endblock %}
