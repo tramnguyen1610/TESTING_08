@@ -153,7 +153,6 @@ def api_update_ncc(request, ma_ncc):
 
 
 # --- NHẬP HÀNG ---
-# --- NHẬP HÀNG ---
 def get_next_ma_phieu(request):
     last_pn = PhieuNhap.objects.all().order_by('MaPhieu').last()
     if not last_pn: return JsonResponse({'next_id': 'PN001'})
@@ -215,25 +214,6 @@ def api_search_nhaphang(request):
         'has_next': page_obj.has_next(),
         'has_previous': page_obj.has_previous()
     })
-
-    return JsonResponse({
-        'results': results,
-        'total_items': paginator.count,
-        'current_page': page_obj.number,
-        'total_pages': paginator.num_pages,
-        'has_next': page_obj.has_next(),
-        'has_previous': page_obj.has_previous()
-    })
-
-    return JsonResponse({
-        'results': results,
-        'total_items': paginator.count,
-        'current_page': page_obj.number,
-        'total_pages': paginator.num_pages,
-        'has_next': page_obj.has_next(),
-        'has_previous': page_obj.has_previous()
-    })
-
 
 def api_get_nhaphang(request, ma_phieu):
     try:
