@@ -264,7 +264,7 @@ def api_update_nhaphang(request, ma_phieu):
                     lh, _ = LoHang.objects.get_or_create(MaLH=sp.get('ma_lo'),
                                                          defaults={'MaSP': sp_obj, 'HSD': sp.get('hsd'),
                                                                    'TrangThai': 'Bình thường'})
-                    if lh.HSD.strftime('%Y-%m-%d') != sp.get('hsd'):
+                    if str(lh.HSD) != str(sp.get('hsd')):
                         lh.HSD = sp.get('hsd')
                         lh.save()
 
