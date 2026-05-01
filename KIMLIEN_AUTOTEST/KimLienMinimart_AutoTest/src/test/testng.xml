@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Kim Lien Minimart Automation Suite">
+    <test name="Quản lý Sản phẩm">
+        <classes>
+            <class name="testcases.SanPhamTest"/>
+            <class name="testcases.NhapHangTest"/>
+            <class name="testcases.LoHangTest"/>
+
+        </classes>
+    </test>
+</suite>
